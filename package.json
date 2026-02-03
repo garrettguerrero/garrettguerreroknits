@@ -9,13 +9,21 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@supabase/auth-helpers-nextjs": "^0.15.0",
+    "@headlessui/react": "^2.2.9",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.93.3",
+    "easymde": "^2.20.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-mdx-remote": "^5.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-dropzone": "^14.4.0",
+    "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
+    "react-simplemde-editor": "^5.2.0",
+    "resend": "^6.9.1",
+    "slugify": "^1.6.6",
     "stripe": "^20.3.0"
   },
   "devDependencies": {
