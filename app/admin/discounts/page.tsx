@@ -28,7 +28,28 @@ export default async function DiscountsPage({
     query = query.eq('is_active', false)
   }
 
-  const { data: discounts, error } = await query
+  const { data: allDiscounts, error } = await query
+
+  // Filter expired codes on the server side based on status filter
+  let discounts = allDiscounts
+  const now = new Date()
+
+  if (discounts && params.status === 'active') {
+    // For "active" filter, exclude expired codes
+    discounts = discounts.filter(
+      (d) => !d.valid_until || new Date(d.valid_until) >= now
+    )
+  } else if (discounts && params.status === 'inactive') {
+    // For "inactive" filter, exclude expired codes
+    discounts = discounts.filter(
+      (d) => !d.valid_until || new Date(d.valid_until) >= now
+    )
+  } else if (discounts && params.status === 'expired') {
+    // For "expired" filter, show only expired codes
+    discounts = discounts.filter(
+      (d) => d.valid_until && new Date(d.valid_until) < now
+    )
+  }
 
   return (
     <div className="p-8">
@@ -82,6 +103,7 @@ export default async function DiscountsPage({
               <option value="">All</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
+              <option value="expired">Expired</option>
             </select>
           </div>
 
