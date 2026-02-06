@@ -3,6 +3,63 @@ import { NextResponse } from 'next/server'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 
+export async function GET(request: Request) {
+  try {
+    const supabase = await createClient()
+
+    // Check if user is admin
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.is_admin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Get query params
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+
+    // Build query
+    let query = supabase
+      .from('products')
+      .select('id, title, slug, price, is_published')
+      .order('title')
+
+    if (status === 'published') {
+      query = query.eq('is_published', true)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Database error:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch patterns' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(data)
+  } catch (error) {
+    console.error('Fetch patterns error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
