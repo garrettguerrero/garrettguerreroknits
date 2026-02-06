@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Edit, Trash2, Eye, EyeOff } from 'lucide-react'
+import { Edit, Trash2, Eye, EyeOff, Star } from 'lucide-react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
@@ -14,6 +14,7 @@ type Pattern = {
   skill_level: string
   price: number
   is_published: boolean
+  is_featured: boolean
   created_at: string
   times_downloaded: number
 }
@@ -35,6 +36,28 @@ export default function PatternTable({ patterns }: { patterns: Pattern[] }) {
 
       toast.success(
         currentStatus ? 'Pattern unpublished' : 'Pattern published'
+      )
+      router.refresh()
+    } catch (error) {
+      toast.error('Failed to update pattern')
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  const toggleFeatured = async (id: string, currentStatus: boolean) => {
+    setLoading(id)
+    try {
+      const response = await fetch(`/api/admin/patterns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_featured: !currentStatus }),
+      })
+
+      if (!response.ok) throw new Error('Failed to update')
+
+      toast.success(
+        currentStatus ? 'Removed from featured' : 'Marked as featured'
       )
       router.refresh()
     } catch (error) {
@@ -159,6 +182,24 @@ export default function PatternTable({ patterns }: { patterns: Pattern[] }) {
                       ) : (
                         <Eye className="w-4 h-4" />
                       )}
+                    </button>
+                    <button
+                      onClick={() =>
+                        toggleFeatured(pattern.id, pattern.is_featured)
+                      }
+                      disabled={loading === pattern.id}
+                      className={`p-2 rounded-lg transition disabled:opacity-50 ${
+                        pattern.is_featured
+                          ? 'text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50'
+                          : 'text-gray-600 hover:text-yellow-600 hover:bg-yellow-50'
+                      }`}
+                      title={
+                        pattern.is_featured ? 'Unfeature' : 'Feature on homepage'
+                      }
+                    >
+                      <Star
+                        className={`w-4 h-4 ${pattern.is_featured ? 'fill-yellow-600' : ''}`}
+                      />
                     </button>
                     <button
                       onClick={() => deletePattern(pattern.id, pattern.title)}

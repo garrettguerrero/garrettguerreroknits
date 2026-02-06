@@ -1,21 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Plus, Search } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import PatternTable from '@/components/admin/PatternTable'
+import PatternFilters from '@/components/admin/PatternFilters'
 
 export default async function PatternsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string; status?: string; category?: string }>
+  searchParams: Promise<{ search?: string; status?: string; category?: string; featured?: string }>
 }) {
   const params = await searchParams
   const supabase = await createClient()
 
-  // Build query
+  // Build query with stable ordering
   let query = supabase
     .from('products')
     .select('*')
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
 
   // Apply filters
   if (params.search) {
@@ -30,6 +32,12 @@ export default async function PatternsPage({
 
   if (params.category) {
     query = query.eq('category', params.category)
+  }
+
+  if (params.featured === 'true') {
+    query = query.eq('is_featured', true)
+  } else if (params.featured === 'false') {
+    query = query.eq('is_featured', false)
   }
 
   const { data: patterns, error } = await query
@@ -56,70 +64,7 @@ export default async function PatternsPage({
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <form className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Search
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                name="search"
-                defaultValue={params.search}
-                placeholder="Search by title..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Status
-            </label>
-            <select
-              name="status"
-              defaultValue={params.status || ''}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category
-            </label>
-            <select
-              name="category"
-              defaultValue={params.category || ''}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All</option>
-              <option value="knit">Knit</option>
-              <option value="crochet">Crochet</option>
-            </select>
-          </div>
-
-          <div className="md:col-span-4 flex gap-2">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-            >
-              Apply Filters
-            </button>
-            <Link
-              href="/admin/patterns"
-              className="px-6 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition"
-            >
-              Clear
-            </Link>
-          </div>
-        </form>
-      </div>
+      <PatternFilters />
 
       {/* Results */}
       {error ? (
