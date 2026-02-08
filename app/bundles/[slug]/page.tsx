@@ -138,7 +138,13 @@ export default async function BundleDetailPage({
                   </p>
                 </div>
 
-                <AddBundleToCartButton bundleId={bundle.id} />
+                <AddBundleToCartButton
+                  bundleId={bundle.id}
+                  title={bundle.title}
+                  price={Number(bundle.price)}
+                  slug={bundle.slug}
+                  coverImage={bundle.cover_image_url || undefined}
+                />
 
                 <p className="text-xs text-center text-gray-500">
                   Instant download after purchase

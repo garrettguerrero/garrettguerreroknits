@@ -1,7 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
 
 export default async function LibraryPage() {
   const supabase = await createClient()
@@ -28,8 +26,6 @@ export default async function LibraryPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
-
       <main className="flex-1 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Header */}
@@ -103,8 +99,6 @@ export default async function LibraryPage() {
           )}
         </div>
       </main>
-
-      <Footer />
     </div>
   )
 }

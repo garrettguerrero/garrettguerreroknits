@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, Download, BookOpen, Package } from 'lucide-react'
+import { Star, Download, BookOpen, Package, Library } from 'lucide-react'
 import ProductCard from '@/components/ProductCard'
 import BundleCard from '@/components/BundleCard'
 import AddToCartButton from '@/components/AddToCartButton'
@@ -194,18 +194,11 @@ export default async function PatternDetailPage({
                       <span className="font-medium">You own this pattern</span>
                     </div>
                     <Link
-                      href={`/api/download/${pattern.id}`}
+                      href="/library"
                       className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
                     >
-                      <Download className="w-5 h-5" />
-                      Download PDF
-                    </Link>
-                    <Link
-                      href={`/patterns/${pattern.slug}/read`}
-                      className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-gray-100 text-gray-900 font-medium rounded-lg hover:bg-gray-200 transition"
-                    >
-                      <BookOpen className="w-5 h-5" />
-                      Read Pattern
+                      <Library className="w-5 h-5" />
+                      View in Library
                     </Link>
                   </div>
                 ) : (
@@ -233,7 +226,14 @@ export default async function PatternDetailPage({
                       )}
                     </div>
 
-                    <AddToCartButton productId={pattern.id} isFree={isFree} />
+                    <AddToCartButton
+                      productId={pattern.id}
+                      title={pattern.title}
+                      price={Number(pattern.price)}
+                      slug={pattern.slug}
+                      coverImage={pattern.cover_image_url || undefined}
+                      isFree={isFree}
+                    />
 
                     <p className="text-xs text-center text-gray-500 mt-3">
                       Instant download after purchase

@@ -1,46 +1,33 @@
 'use client'
 
 import Link from 'next/link'
-import { ShoppingCart } from 'lucide-react'
 import AuthButton from './AuthButton'
+import CartButton from './cart/CartButton'
+import CartDrawer from './cart/CartDrawer'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Navbar() {
-  const [cartCount, setCartCount] = useState(0)
+  const [isCartOpen, setIsCartOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const supabase = createClient()
 
   useEffect(() => {
-    // Get user and cart count
-    const loadUserAndCart = async () => {
+    // Get user
+    const loadUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
       setUser(user)
-
-      if (user) {
-        const { count } = await supabase
-          .from('cart_items')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        setCartCount(count || 0)
-      }
     }
 
-    loadUserAndCart()
+    loadUser()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
-      if (!session?.user) {
-        setCartCount(0)
-      } else {
-        loadUserAndCart()
-      }
     })
 
     return () => subscription.unsubscribe()
@@ -83,26 +70,17 @@ export default function Navbar() {
 
           {/* Right side: Cart + Auth */}
           <div className="flex items-center gap-6">
-            {/* Cart Icon */}
-            {user && (
-              <Link
-                href="/cart"
-                className="relative p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <ShoppingCart className="w-6 h-6 text-gray-700" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-            )}
+            {/* Cart Button */}
+            <CartButton onClick={() => setIsCartOpen(true)} />
 
             {/* Auth Button */}
             <AuthButton />
           </div>
         </div>
       </div>
+
+      {/* Cart Drawer */}
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </nav>
   )
 }

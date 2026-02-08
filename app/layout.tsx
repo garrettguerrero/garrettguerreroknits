@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { headers } from "next/headers";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -20,18 +23,24 @@ export const metadata: Metadata = {
   description: "Beautifully crafted knitting and crochet patterns",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isAdminPage = pathname.startsWith("/admin");
+
   return (
     <html lang="en">
       <body
         className={`${inter.variable} ${playfair.variable} antialiased font-sans`}
       >
         <Toaster position="top-right" />
+        {!isAdminPage && <Navbar />}
         {children}
+        {!isAdminPage && <Footer />}
       </body>
     </html>
   );
