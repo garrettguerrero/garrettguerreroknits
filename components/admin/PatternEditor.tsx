@@ -103,7 +103,7 @@ export default function PatternEditor({
         'fullscreen',
         '|',
         'guide',
-      ],
+      ] as any,
     }
   }, [])
 

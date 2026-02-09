@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
+import { resend, FROM_EMAIL } from '@/lib/email/resend'
+import { render } from '@react-email/render'
+import FreePatternEmail from '@/lib/email/templates/FreePatternEmail'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[Free Pattern] Starting claim process...')
     const { email, patternId } = await request.json()
+    console.log('[Free Pattern] Email:', email, 'Pattern ID:', patternId)
 
     if (!email || !patternId) {
       return NextResponse.json({ error: 'Email and pattern ID are required' }, { status: 400 })
     }
 
+    console.log('[Free Pattern] Creating Supabase client...')
     const supabase = await createClient()
     const supabaseAdmin = createServiceRoleClient()
 
@@ -20,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Verify pattern exists and is free
     const { data: pattern, error: patternError } = await supabase
       .from('products')
-      .select('id, slug, price, is_published')
+      .select('id, title, slug, price, is_published')
       .eq('id', patternId)
       .single()
 
@@ -43,17 +49,58 @@ export async function POST(request: NextRequest) {
           .select('id')
           .eq('user_id', user.id)
           .eq('product_id', patternId)
-          .single()
+          .maybeSingle()
       : await supabase
           .from('library')
           .select('id')
           .eq('email', email)
           .eq('product_id', patternId)
-          .single()
+          .maybeSingle()
 
     if (libraryCheck.data) {
+      console.log('[Free Pattern] Pattern already in library, sending email anyway')
+      // Pattern already claimed, but send email anyway
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const downloadUrl = user
+        ? `${appUrl}/library`
+        : `${appUrl}/api/download/${patternId}?email=${encodeURIComponent(email)}`
+
+      try {
+        console.log('[Free Pattern] Rendering email template for duplicate claim...')
+        const emailHtml = await render(
+          FreePatternEmail({
+            patternTitle: pattern.title,
+            downloadUrl,
+            patternSlug: pattern.slug,
+            appUrl,
+          })
+        )
+
+        console.log('[Free Pattern] Sending email via Resend (duplicate claim)...')
+        console.log('[Free Pattern] Email details:', {
+          from: FROM_EMAIL,
+          to: email,
+          subject: `Your Free Pattern: ${pattern.title} 🧶`,
+          downloadUrl,
+          isAuthenticated: !!user
+        })
+
+        const resendResponse = await resend.emails.send({
+          from: FROM_EMAIL,
+          to: email,
+          subject: `Your Free Pattern: ${pattern.title} 🧶`,
+          html: emailHtml,
+        })
+
+        console.log('[Free Pattern] Resend API response (duplicate):', JSON.stringify(resendResponse, null, 2))
+        console.log('[Free Pattern] Email sent successfully to:', email)
+      } catch (emailError) {
+        console.error('[Free Pattern] Failed to send email:', emailError)
+      }
+
       return NextResponse.json({
-        message: 'Pattern already in your library',
+        success: true,
+        message: 'Pattern already in your library. Email sent!',
         patternSlug: pattern.slug,
       })
     }
@@ -73,8 +120,15 @@ export async function POST(request: NextRequest) {
     const { error: libraryError } = await supabaseAdmin.from('library').insert(libraryData)
 
     if (libraryError) {
-      console.error('Library insert error:', libraryError)
-      return NextResponse.json({ error: 'Failed to add pattern to library' }, { status: 500 })
+      console.error('[Free Pattern] Library insert error:', libraryError)
+      // Handle duplicate key error (23505) - this means pattern was already claimed
+      if (libraryError.code === '23505') {
+        console.log('[Free Pattern] Duplicate detected during insert, continuing with email send')
+        // Continue to send email even though insert failed due to duplicate
+      } else {
+        // Other database errors should fail the request
+        return NextResponse.json({ error: 'Failed to add pattern to library' }, { status: 500 })
+      }
     }
 
     // Create a "free order" record for tracking
@@ -103,12 +157,69 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    // Send email with download link (for guests or as confirmation for users)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const downloadUrl = user
+      ? `${appUrl}/library`
+      : `${appUrl}/api/download/${patternId}?email=${encodeURIComponent(email)}`
+
+    try {
+      console.log('[Free Pattern] Rendering email template...')
+      const emailHtml = await render(
+        FreePatternEmail({
+          patternTitle: pattern.title,
+          downloadUrl,
+          patternSlug: pattern.slug,
+          appUrl,
+        })
+      )
+
+      console.log('[Free Pattern] Sending email via Resend...')
+      console.log('[Free Pattern] Email details:', {
+        from: FROM_EMAIL,
+        to: email,
+        subject: `Your Free Pattern: ${pattern.title} 🧶`,
+        downloadUrl,
+        isAuthenticated: !!user
+      })
+
+      const resendResponse = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: email,
+        subject: `Your Free Pattern: ${pattern.title} 🧶`,
+        html: emailHtml,
+      })
+
+      console.log('[Free Pattern] Resend API response:', JSON.stringify(resendResponse, null, 2))
+      console.log('[Free Pattern] Email sent successfully to:', email)
+    } catch (emailError) {
+      console.error('[Free Pattern] Failed to send email:', emailError)
+      // Don't fail the request if email fails - pattern is already in library
+    }
+
+    // Add to Resend audience (optional)
+    try {
+      await resend.contacts.create({
+        email,
+        audienceId: process.env.RESEND_AUDIENCE_ID || '',
+      })
+    } catch (audienceError) {
+      console.log('Note: Could not add to audience (may not be configured)')
+      // This is optional, so we don't fail the request
+    }
+
+    console.log('[Free Pattern] Process completed successfully')
     return NextResponse.json({
       success: true,
       patternSlug: pattern.slug,
     })
-  } catch (error) {
-    console.error('Free pattern claim error:', error)
-    return NextResponse.json({ error: 'Failed to claim pattern' }, { status: 500 })
+  } catch (error: any) {
+    console.error('[Free Pattern] CRITICAL ERROR:', error)
+    console.error('[Free Pattern] Error message:', error?.message)
+    console.error('[Free Pattern] Error stack:', error?.stack)
+    return NextResponse.json({
+      error: 'Failed to claim pattern',
+      details: error?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }

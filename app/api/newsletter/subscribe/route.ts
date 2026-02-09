@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { resend, FROM_EMAIL } from '@/lib/email/resend'
+import { render } from '@react-email/render'
+import NewsletterWelcomeEmail from '@/lib/email/templates/NewsletterWelcomeEmail'
 
 export async function POST(request: Request) {
   try {
@@ -35,9 +38,35 @@ export async function POST(request: Request) {
       }
     }
 
-    // TODO: In Sprint 5, add Resend integration here
-    // For now, just return success
-    console.log('Newsletter signup:', email)
+    // Send welcome email via Resend
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+    try {
+      const emailHtml = await render(NewsletterWelcomeEmail({ appUrl }))
+
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: email,
+        subject: 'Welcome to Garrett Guerrero Knits! 🧶',
+        html: emailHtml,
+      })
+
+      console.log('Newsletter welcome email sent to:', email)
+    } catch (emailError) {
+      console.error('Failed to send welcome email:', emailError)
+      // Don't fail the whole request if email fails
+    }
+
+    // Add to Resend audience (optional, for segmentation)
+    try {
+      await resend.contacts.create({
+        email,
+        audienceId: process.env.RESEND_AUDIENCE_ID || '',
+      })
+    } catch (audienceError) {
+      console.log('Note: Could not add to audience (may not be configured):', audienceError)
+      // This is optional, so we don't fail the request
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

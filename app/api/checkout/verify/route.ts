@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
+import { resend, FROM_EMAIL } from '@/lib/email/resend'
+import { render } from '@react-email/render'
+import PurchaseConfirmationEmail from '@/lib/email/templates/PurchaseConfirmationEmail'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2026-01-28.clover',
 })
 
 export async function GET(request: NextRequest) {
@@ -119,6 +122,81 @@ export async function GET(request: NextRequest) {
               }
             }
           }
+        }
+      }
+
+      // Send purchase confirmation email
+      const customerEmail = guestEmail || session.customer_email
+      if (customerEmail && orderItems && orderItems.length > 0) {
+        try {
+          // Fetch order details
+          const { data: order } = await supabase
+            .from('orders')
+            .select('id, total_amount, discount_amount, final_amount')
+            .eq('id', orderId)
+            .single()
+
+          // Fetch item details for email
+          const itemDetails = []
+          for (const item of orderItems) {
+            if (item.product_id) {
+              const { data: product } = await supabase
+                .from('products')
+                .select('title, price')
+                .eq('id', item.product_id)
+                .single()
+
+              if (product) {
+                itemDetails.push({
+                  title: product.title,
+                  price: product.price,
+                  type: 'pattern' as const,
+                })
+              }
+            } else if (item.bundle_id) {
+              const { data: bundle } = await supabase
+                .from('bundles')
+                .select('title, price')
+                .eq('id', item.bundle_id)
+                .single()
+
+              if (bundle) {
+                itemDetails.push({
+                  title: bundle.title,
+                  price: bundle.price,
+                  type: 'bundle' as const,
+                })
+              }
+            }
+          }
+
+          if (order && itemDetails.length > 0) {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+            const emailHtml = await render(
+              PurchaseConfirmationEmail({
+                orderId: order.id,
+                items: itemDetails,
+                subtotal: order.total_amount || 0,
+                discount: order.discount_amount || 0,
+                total: order.final_amount || 0,
+                customerEmail,
+                appUrl,
+              })
+            )
+
+            await resend.emails.send({
+              from: FROM_EMAIL,
+              to: customerEmail,
+              subject: 'Order Confirmation - Your Patterns Are Ready! 🧶',
+              html: emailHtml,
+            })
+
+            console.log('[Verify] Purchase confirmation email sent to:', customerEmail)
+          }
+        } catch (emailError) {
+          console.error('[Verify] Failed to send purchase confirmation email:', emailError)
+          // Don't fail the request if email fails - purchase is already complete
         }
       }
     }

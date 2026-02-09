@@ -39,7 +39,7 @@ export default function SignupPage() {
       if (data.session) {
         // If email confirmation is disabled, user is signed in immediately
         // Update newsletter subscription
-        if (newsletterSubscribed) {
+        if (newsletterSubscribed && data.user) {
           await supabase
             .from('profiles')
             .update({ newsletter_subscribed: true })
