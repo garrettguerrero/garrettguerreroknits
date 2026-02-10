@@ -69,15 +69,15 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-              <p className="text-gray-500 mb-2">Your cart is empty</p>
-              <p className="text-sm text-gray-400 mb-6">
-                Add patterns or bundles to get started
+              <p className="text-lg font-medium text-gray-700 mb-2">Your cart is empty</p>
+              <p className="text-sm text-gray-500 mb-6">
+                Discover beautiful patterns and start your next project! 🧶
               </p>
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
               >
-                Continue Shopping
+                Browse Patterns
               </button>
             </div>
           ) : (

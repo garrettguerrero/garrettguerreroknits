@@ -6,17 +6,22 @@ import { User } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+import { useCartStore } from '@/lib/store/cart-store'
 
 export default function AuthButton() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
+  const clearCart = useCartStore((state) => state.clearCart)
 
   useEffect(() => {
+    let previousUserId: string | null = null
+
     // Get initial user
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user)
+      previousUserId = user?.id ?? null
       setLoading(false)
     })
 
@@ -24,14 +29,24 @@ export default function AuthButton() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      const newUser = session?.user ?? null
+      const newUserId = newUser?.id ?? null
+
+      // Clear cart if user changed (logout, login as different user, or switch accounts)
+      if (previousUserId !== newUserId) {
+        clearCart()
+      }
+
+      previousUserId = newUserId
+      setUser(newUser)
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase.auth])
+  }, [supabase.auth, clearCart])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
+    clearCart() // Clear cart on sign out
     toast.success('Signed out successfully')
     router.push('/')
     router.refresh()

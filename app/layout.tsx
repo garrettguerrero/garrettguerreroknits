@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import { headers } from "next/headers";
@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   description: "Beautifully crafted knitting and crochet patterns",
 };
 
+export const viewport: Viewport = {
+  colorScheme: "light",
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -33,9 +37,9 @@ export default async function RootLayout({
   const isAdminPage = pathname.startsWith("/admin");
 
   return (
-    <html lang="en">
+    <html lang="en" className="light" style={{ colorScheme: "light" }}>
       <body
-        className={`${inter.variable} ${playfair.variable} antialiased font-sans`}
+        className={`${inter.variable} ${playfair.variable} antialiased font-sans bg-white text-gray-900`}
       >
         <Toaster position="top-right" />
         {!isAdminPage && <Navbar />}

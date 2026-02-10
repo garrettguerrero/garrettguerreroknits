@@ -6,19 +6,24 @@ import CartButton from './cart/CartButton'
 import CartDrawer from './cart/CartDrawer'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useCartStore } from '@/lib/store/cart-store'
 
 export default function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const supabase = createClient()
+  const clearCart = useCartStore((state) => state.clearCart)
 
   useEffect(() => {
+    let previousUserId: string | null = null
+
     // Get user
     const loadUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser()
       setUser(user)
+      previousUserId = user?.id ?? null
     }
 
     loadUser()
@@ -27,11 +32,20 @@ export default function Navbar() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      const newUser = session?.user ?? null
+      const newUserId = newUser?.id ?? null
+
+      // Clear cart if user changed (logout, login as different user, or switch accounts)
+      if (previousUserId !== newUserId) {
+        clearCart()
+      }
+
+      previousUserId = newUserId
+      setUser(newUser)
     })
 
     return () => subscription.unsubscribe()
-  }, [supabase])
+  }, [supabase, clearCart])
 
   return (
     <nav className="border-b border-gray-200 bg-white sticky top-0 z-50">

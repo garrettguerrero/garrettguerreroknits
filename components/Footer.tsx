@@ -22,14 +22,17 @@ export default function Footer() {
       const data = await response.json()
 
       if (!response.ok) {
-        toast.error(data.error || 'Something went wrong')
+        const message = data.error === 'Email already subscribed'
+          ? 'You\'re already subscribed! 🎉'
+          : data.error || 'Unable to subscribe. Please try again.'
+        toast.error(message)
         return
       }
 
-      toast.success('Thanks for subscribing!')
+      toast.success('✓ Thanks for subscribing! Check your email.')
       setEmail('')
     } catch (error) {
-      toast.error('Failed to subscribe. Please try again.')
+      toast.error('Connection error. Please check your internet and try again.')
     } finally {
       setLoading(false)
     }

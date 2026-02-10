@@ -50,8 +50,8 @@ export default function SignupPage() {
         router.push('/library')
         router.refresh()
       } else {
-        // Email confirmation required
-        toast.success('Check your email to confirm your account!')
+        // Email confirmation required - redirect to confirmation page
+        router.push(`/auth/confirm-email?email=${encodeURIComponent(email)}`)
       }
     } catch (error) {
       toast.error('An unexpected error occurred')

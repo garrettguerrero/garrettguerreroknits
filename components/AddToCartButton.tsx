@@ -63,10 +63,13 @@ export default function AddToCartButton({
             throw new Error(data.error || 'Failed to add pattern')
           }
 
-          toast.success('Pattern added to your library!')
+          toast.success('✓ Pattern added to your library!')
           router.push('/library')
         } catch (error: any) {
-          toast.error(error.message || 'Failed to add pattern')
+          const message = error.message === 'Pattern already in your library'
+            ? 'You already have this pattern in your library'
+            : 'Oops! Unable to add pattern. Please try again.'
+          toast.error(message)
         } finally {
           setLoading(false)
         }

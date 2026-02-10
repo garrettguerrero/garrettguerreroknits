@@ -82,19 +82,30 @@ export default async function LibraryPage() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-              <div className="text-6xl mb-4">📚</div>
+              <div className="text-6xl mb-4">🧶</div>
               <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">
                 Your library is empty
               </h2>
-              <p className="text-gray-600 mb-6">
-                Browse our marketplace to find patterns you'll love
+              <p className="text-gray-600 mb-2">
+                Start building your collection of knitting and crochet patterns!
               </p>
-              <a
-                href="/marketplace"
-                className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
-              >
-                Browse Patterns
-              </a>
+              <p className="text-sm text-gray-500 mb-8">
+                Browse our marketplace or claim a free pattern to get started
+              </p>
+              <div className="flex gap-3 justify-center">
+                <a
+                  href="/marketplace?filter=free"
+                  className="inline-block px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+                >
+                  Get Free Pattern
+                </a>
+                <a
+                  href="/marketplace"
+                  className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
+                >
+                  Browse All Patterns
+                </a>
+              </div>
             </div>
           )}
         </div>
