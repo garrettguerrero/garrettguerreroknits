@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import LibraryCard from '@/components/LibraryCard'
 
 export default async function LibraryPage() {
   const supabase = await createClient()
@@ -12,9 +13,9 @@ export default async function LibraryPage() {
     redirect('/auth/login?redirectTo=/library')
   }
 
-  // Fetch user's library
+  // Fetch user's library with update information
   const { data: libraryItems, error } = await supabase
-    .from('library')
+    .from('library_with_updates')
     .select(
       `
       *,
@@ -48,36 +49,7 @@ export default async function LibraryPage() {
           ) : libraryItems && libraryItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {libraryItems.map((item: any) => (
-                <div
-                  key={item.id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition"
-                >
-                  {item.product?.cover_image_url && (
-                    <div className="aspect-[4/3] bg-gray-100">
-                      <img
-                        src={item.product.cover_image_url}
-                        alt={item.product.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="font-serif font-bold text-lg mb-2">
-                      {item.product?.title || 'Pattern'}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Added {new Date(item.created_at).toLocaleDateString()}
-                    </p>
-                    <div className="flex gap-2">
-                      <button className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
-                        Download PDF
-                      </button>
-                      <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
-                        Read Pattern
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <LibraryCard key={item.id} libraryItem={item} />
               ))}
             </div>
           ) : (

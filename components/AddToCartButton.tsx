@@ -1,6 +1,6 @@
 'use client'
 
-import { ShoppingCart, Check, Download, Loader2 } from 'lucide-react'
+import { ShoppingCart, Check, Download, Loader2, X } from 'lucide-react'
 import { useCartStore } from '@/lib/store/cart-store'
 import { toast } from 'react-hot-toast'
 import { useState, useEffect } from 'react'
@@ -26,7 +26,7 @@ export default function AddToCartButton({
   isFree = false
 }: AddToCartButtonProps) {
   const router = useRouter()
-  const { addItem, hasItem } = useCartStore()
+  const { addItem, removeItem, hasItem } = useCartStore()
   const inCart = hasItem(productId, 'pattern')
   const [showFreeModal, setShowFreeModal] = useState(false)
   const [user, setUser] = useState<any>(null)
@@ -78,22 +78,21 @@ export default function AddToCartButton({
         setShowFreeModal(true)
       }
     } else {
-      // Paid patterns: Add to cart
+      // Paid patterns: Toggle cart (add or remove)
       if (inCart) {
-        toast.success('Pattern is already in your cart')
-        return
+        removeItem(productId, 'pattern')
+        toast.success('Removed from cart')
+      } else {
+        addItem({
+          id: productId,
+          type: 'pattern',
+          title,
+          price,
+          slug,
+          coverImage
+        })
+        toast.success('Added to cart!')
       }
-
-      addItem({
-        id: productId,
-        type: 'pattern',
-        title,
-        price,
-        slug,
-        coverImage
-      })
-
-      toast.success('Added to cart!')
     }
   }
 
@@ -104,7 +103,7 @@ export default function AddToCartButton({
         disabled={loading}
         className={`flex items-center justify-center gap-2 w-full px-6 py-3 font-medium rounded-lg transition ${
           inCart
-            ? 'bg-green-100 text-green-800 hover:bg-green-200'
+            ? 'bg-red-100 text-red-800 hover:bg-red-200'
             : isFree
             ? 'bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed'
             : 'bg-blue-600 text-white hover:bg-blue-700'
@@ -112,8 +111,8 @@ export default function AddToCartButton({
       >
         {inCart ? (
           <>
-            <Check className="w-5 h-5" />
-            In Cart
+            <X className="w-5 h-5" />
+            Remove from Cart
           </>
         ) : isFree ? (
           loading ? (

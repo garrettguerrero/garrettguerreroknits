@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Star, ShoppingCart } from 'lucide-react'
+import { Star } from 'lucide-react'
+import AddToCartButton from './AddToCartButton'
 
 type Product = {
   id: string
@@ -85,9 +86,9 @@ export default function ProductCard({ product }: { product: Product }) {
       </Link>
 
       {/* Footer */}
-      <div className="px-4 pb-4 flex items-center justify-between">
-        {/* Price */}
-        <div>
+      <div className="px-4 pb-4">
+        <div className="flex items-center justify-between mb-3">
+          {/* Price */}
           {isFree ? (
             <span className="text-lg font-bold text-green-600">Free</span>
           ) : (
@@ -98,17 +99,14 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         {/* Add to Cart Button */}
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            // TODO: Add to cart functionality in Sprint 4
-            console.log('Add to cart:', product.id)
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
-        >
-          <ShoppingCart className="w-4 h-4" />
-          Add to Cart
-        </button>
+        <AddToCartButton
+          productId={product.id}
+          title={product.title}
+          price={product.price}
+          slug={product.slug}
+          coverImage={product.cover_image_url || undefined}
+          isFree={isFree}
+        />
       </div>
     </div>
   )

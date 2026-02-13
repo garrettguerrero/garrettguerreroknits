@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
@@ -8,6 +8,7 @@ export async function GET(
   try {
     const { productId } = await params
     const supabase = await createClient()
+    const supabaseAdmin = createServiceRoleClient()
 
     // Get current user (if logged in)
     const {
@@ -52,7 +53,8 @@ export async function GET(
     }
 
     // Generate signed URL (valid for 60 seconds)
-    const { data: signedUrlData, error: urlError } = await supabase.storage
+    // Use service role client to bypass RLS for private bucket access
+    const { data: signedUrlData, error: urlError } = await supabaseAdmin.storage
       .from('patterns')
       .createSignedUrl(pattern.pdf_storage_path, 60)
 
@@ -64,8 +66,8 @@ export async function GET(
       )
     }
 
-    // Increment download count
-    await supabase.rpc('increment_download_count', { pattern_id: productId })
+    // Increment download count (use admin client to bypass RLS)
+    await supabaseAdmin.rpc('increment_download_count', { pattern_id: productId })
 
     // Redirect to the signed URL
     return NextResponse.redirect(signedUrlData.signedUrl)
